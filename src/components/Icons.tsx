@@ -51,3 +51,6 @@ export const ChartIcon = (p: SVGProps<SVGSVGElement>) => (
 export const ListIcon = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
 );
+export const CloudIcon = (p: SVGProps<SVGSVGElement>) => (
+  <svg {...base(p)}><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 0 0 4.5 12 3.5 3.5 0 0 0 6 19z" /></svg>
+);

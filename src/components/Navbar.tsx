@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartIcon, ListIcon, PlusIcon, WalletIcon } from "./Icons";
+import { ChartIcon, CloudIcon, ListIcon, PlusIcon, WalletIcon } from "./Icons";
+import { SyncIndicator } from "./cloud/SyncIndicator";
 import { useExpenseDialogs } from "./ExpenseDialogs";
 
 const LINKS = [
   { href: "/", label: "Dashboard", Icon: ChartIcon },
   { href: "/expenses", label: "Expenses", Icon: ListIcon },
+  { href: "/exports", label: "Exports", Icon: CloudIcon },
 ];
 
 export function Navbar() {
@@ -32,18 +34,22 @@ export function Navbar() {
                 key={href}
                 href={href}
                 aria-current={active ? "page" : undefined}
+                aria-label={label}
                 className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm sm:px-3 font-medium transition ${
                   active ? "bg-slate-100 text-slate-900" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 }`}
               >
                 <Icon width={16} height={16} />
-                {label}
+                <span className="hidden sm:inline">{label}</span>
               </Link>
             );
           })}
         </nav>
 
-        <button onClick={openAdd} className="btn-primary ml-auto px-3 sm:px-4" aria-label="Add expense">
+        <div className="ml-auto">
+          <SyncIndicator />
+        </div>
+        <button onClick={openAdd} className="btn-primary px-3 sm:px-4" aria-label="Add expense">
           <PlusIcon width={16} height={16} />
           <span className="hidden sm:inline">Add expense</span>
         </button>

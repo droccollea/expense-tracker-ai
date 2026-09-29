@@ -2,11 +2,10 @@
 
 import { useDeferredValue, useMemo, useState } from "react";
 import { useExpenses } from "@/hooks/useExpenses";
-import { useToast } from "@/hooks/useToast";
 import { EMPTY_FILTERS, ExpenseFilters } from "@/lib/types";
 import { filterExpenses, sortByDateDesc, sumCents } from "@/lib/analytics";
 import { formatCurrency } from "@/lib/format";
-import { downloadCSV } from "@/lib/csv";
+import Link from "next/link";
 import { FiltersBar } from "@/components/FiltersBar";
 import { ExpenseList } from "@/components/ExpenseList";
 import { EmptyState } from "@/components/EmptyState";
@@ -20,7 +19,6 @@ const PAGE_SIZE = 25;
 export default function ExpensesPage() {
   const { expenses, isLoading } = useExpenses();
   const { openAdd } = useExpenseDialogs();
-  const { notify } = useToast();
   const [filters, setFilters] = useState<ExpenseFilters>(EMPTY_FILTERS);
   const [sort, setSort] = useState<Sort>("date-desc");
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -44,19 +42,6 @@ export default function ExpensesPage() {
   const total = sumCents(visible);
   const isFiltered = JSON.stringify(filters) !== JSON.stringify(EMPTY_FILTERS);
 
-  function handleExport() {
-    if (visible.length === 0) {
-      notify("Nothing to export — no expenses match your filters.", "error");
-      return;
-    }
-    try {
-      downloadCSV(visible);
-      notify(`Exported ${visible.length} expense${visible.length === 1 ? "" : "s"} to CSV.`);
-    } catch {
-      notify("Export failed. Please try again.", "error");
-    }
-  }
-
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -64,9 +49,9 @@ export default function ExpensesPage() {
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Expenses</h1>
           <p className="mt-1 text-sm text-slate-500">Search, filter, edit and export your expenses.</p>
         </div>
-        <button onClick={handleExport} className="btn-secondary" disabled={isLoading}>
-          <DownloadIcon width={16} height={16} /> Export CSV
-        </button>
+        <Link href="/exports" className="btn-secondary">
+          <DownloadIcon width={16} height={16} /> Export &amp; share
+        </Link>
       </div>
 
       <FiltersBar
