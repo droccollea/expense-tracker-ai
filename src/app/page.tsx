@@ -10,19 +10,26 @@ import { ExpenseList } from "@/components/ExpenseList";
 import { EmptyState } from "@/components/EmptyState";
 import { DashboardSkeleton } from "@/components/Skeleton";
 import { useExpenseDialogs } from "@/components/ExpenseDialogs";
-import { PlusIcon } from "@/components/Icons";
+import { DownloadIcon, PlusIcon } from "@/components/Icons";
+import { useExportCenter } from "@/components/export/ExportCenter";
 import { useToast } from "@/hooks/useToast";
 
 export default function DashboardPage() {
   const { expenses, isLoading, loadSampleData } = useExpenses();
   const { openAdd } = useExpenseDialogs();
   const { notify } = useToast();
+  const { openExport } = useExportCenter();
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-500">An overview of where your money goes.</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
+          <p className="mt-1 text-sm text-slate-500">An overview of where your money goes.</p>
+        </div>
+        <button onClick={() => openExport()} disabled={isLoading || expenses.length === 0} className="btn-secondary">
+          <DownloadIcon width={16} height={16} /> Export…
+        </button>
       </div>
 
       {isLoading ? (
