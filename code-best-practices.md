@@ -293,7 +293,7 @@ SOLID was written for object-oriented classes. In a React and TypeScript codebas
   - Pinned to `jspdf@2.5.2` and `jspdf-autotable@3.8.4`, which have critical and high advisories (V2-3).
   - Our code doesn't call the vulnerable APIs, but choosing an outdated major version for a new dependency is a hygiene failure.
 - **V3 🔴:**
-  - **New, 🔎 by inspection: formula injection in the share viewer's CSV download** (`app/share/page.tsx:64`). The viewer's "Download CSV" only applies quoting, not the guard in `serialize.ts`.
+  - ✅ **V3-6: formula injection in the share viewer's CSV download** (`app/share/page.tsx:64`), reproduced in the browser. The viewer's "Download CSV" only applies quoting, not the guard in `serialize.ts`.
     - Share links are *untrusted input* written by someone else.
     - So a crafted link whose descriptions start with `=`, `+`, `-` or `@` (for example `=HYPERLINK("https://evil…","Click")`) would put live formulas into the recipient's spreadsheet.
     - Fix: reuse `serialize.ts`'s `csvCell`, which is also the DRY fix in §4.1.

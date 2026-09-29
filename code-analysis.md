@@ -29,7 +29,10 @@
 4. **V3 has multi-tab defects.**
    - When two tabs open at the same time, both run the same due schedule, so the export is delivered twice.
    - A tab holding stale state overwrites changes made in another tab, such as newly created share links.
-5. **V3's share-link viewer crashes on a malformed link** because the decoded data is barely validated. Link expiry is enforced only in the UI; the data can be decoded offline.
+5. **V3's share-link viewer trusts link data it shouldn't.**
+   - A malformed link crashes it, because the decoded data is barely validated.
+   - Its "Download CSV" button writes descriptions without the formula-injection guard, so a crafted link can put live spreadsheet formulas into the recipient's file.
+   - Link expiry is enforced only in the UI; the data can be decoded offline.
 6. **Baseline, all branches (including `main`):** `next@14.2.33` has a critical advisory rollup with no fix on the 14.x line. The fix is Next 16, a major upgrade. This predates the export work.
 
 **Scorecard** (1 = poor, 5 = strong)
@@ -41,7 +44,7 @@
 | Architecture / separation of concerns | 3 | 5 | 4 |
 | Complexity cost | 5 (trivial) | 3 | 2 |
 | Error handling | 2 | 4 | 3 |
-| Security posture | 4 | 2 (jsPDF advisories) | 3 |
+| Security posture | 4 | 2 (jsPDF advisories) | 2 (unvalidated link data, CSV formula injection) |
 | Performance | 5 | 4 | 3 |
 | Extensibility | 2 | 5 | 4 |
 | Test evidence | 1 manual check | 28 automated checks | 42 automated checks |
@@ -71,6 +74,7 @@
 | V3-3 | V3 | A share link with an unexpected category crashes the viewer | Low–Medium | ✅ `TypeError: Cannot read properties of undefined (reading 'color')`, which triggers the app's error page. |
 | V3-4 | V3 | Share-link expiry is advisory only | Low (but the UI implies a guarantee) | ✅ The viewer correctly shows "expired", but one `zlib.inflateRawSync` call on the same token recovers the full data. |
 | V3-5 | V3 | Clearing history, or pushing more than 50 jobs, erases "last backup" status | Low | 🔎 `lastBackupAt` is derived from `jobs` (`useCloud.tsx:228`). `clearHistory` and `MAX_HISTORY` (line 14 / 118) can remove the backup job, after which the navbar says "Not backed up". |
+| V3-6 | V3 | The share viewer's "Download CSV" has no formula-injection guard, so data from someone else's link can inject spreadsheet formulas | Medium (security) | ✅ A link whose description is `=HYPERLINK("https://example.invalid","Receipt")` downloaded as `…,"=HYPERLINK(""https://example.invalid"",""Receipt"")"`. Quoting doesn't stop evaluation; only the `'` prefix does. The viewer's own writer (`app/share/page.tsx:64`) skips the guard in `lib/cloud/serialize.ts`. (Tested up to the file contents; not opened in a spreadsheet app.) |
 | BASE-1 | all | `next@14.2.33` advisory rollup (DoS, request smuggling, cache poisoning, CSP-nonce XSS, …) | High (inherited) | ✅ `npm audit`. Mostly affects server features this client-only app doesn't use, but it is not patched on 14.x. |
 
 ---
@@ -308,6 +312,7 @@ SharePanel → buildSnapshot → deflate-raw → base64url → /share#r=<token>
   - **Readable offline (V3-4):** the payload is *compressed, not encrypted*. Anyone holding the link can read it without the viewer, so expiry can't be enforced.
   - **Copies persist:** links remain in browser history, in `localStorage` (`shares`), and in any chat or email tool they're pasted into.
   - **Input validation is minimal (V3-3):** React escapes everything, so XSS is not possible. However, unexpected categories or types crash the page, and a crafted high-ratio deflate payload could exhaust the viewer tab's memory (🔎 theoretical).
+- **CSV formula injection in the share viewer (V3-6).** Share links are *untrusted input* written by someone else, yet the viewer's "Download CSV" uses its own inline writer that only quotes cells. Descriptions beginning with `= + - @` reach the recipient's spreadsheet as live formulas (for example a disguised `HYPERLINK`). The app's main CSV writer (`serialize.ts`) has the guard, so this is a duplication that drifted. Fix: reuse `csvCell`.
 - 🔎 **UI copy overstates security.** Simulated stage labels say "Encrypting" and "Verifying checksum" (`destinations.ts:64`) for actions that never happen. The Simulated badge softens this, but the copy should change.
 - **QR code:** `dangerouslySetInnerHTML` renders the QR SVG, but the input is the app's own URL and the SVG comes from `qrcode`, so it's safe.
 - **No real credentials:** nothing is handled or stored.
@@ -321,7 +326,7 @@ SharePanel → buildSnapshot → deflate-raw → base64url → /share#r=<token>
 - **Simulated latency:** 450–1,000 ms per stage (180 ms for local downloads).
 
 ### Defects
-V3-1, V3-2, V3-3, V3-4 and V3-5, as described in §2. Also:
+V3-1, V3-2, V3-3, V3-4, V3-5 and V3-6, as described in §2. Also:
 - 🔎 **Unused field:** `ShareLink.templateId` is always `"monthly-summary"` (`SharePanel.tsx:52`).
 - 🔎 **Mixed row types in JSON:** the Tax Report's JSON output puts subtotal and TOTAL rows in the same array as transactions, so consumers must filter out rows with `date: ""`.
 - 🔎 **Scheduled downloads have no user gesture** (`useCloud.tsx:139`). Browsers may block or prompt for repeated automatic downloads (not tested).
@@ -377,7 +382,7 @@ The richest UX, with two real innovations worth keeping: share links that need n
 | No expenses | Button disabled | Entry buttons disabled; empty preview | Empty state on Send and Share |
 | Zero matches | n/a | Empty state + disabled export | Error message ("pick a different period") |
 | Commas, quotes, newlines | Quoted ✅ | Quoted ✅ | Quoted ✅ |
-| Leading `=+-@` | Prefixed (also alters text) | Same | Prefixed; signed numbers left intact |
+| Leading `=+-@` | Prefixed (also alters text) | Same | Prefixed; signed numbers left intact. **Not guarded in the share viewer's CSV download (V3-6).** |
 | Non-Latin text | CSV ✅ | CSV/JSON ✅, **PDF ❌** (V2-2) | ✅ |
 | Invalid file name | n/a | Sanitised; error if empty | Generated name, sanitised |
 | Inverted date range | n/a | Inline error | n/a (preset periods only) |
@@ -404,7 +409,7 @@ The richest UX, with two real innovations worth keeping: share links that need n
 3. **Replace raw error messages** with friendly ones.
 
 **Then port from V3:**
-1. **Share links**, after adding schema validation to `decodeSnapshot` (known categories, types, size caps) and removing the implied guarantee from the expiry wording. If expiry or revocation must be real, it needs a server.
+1. **Share links**, after adding schema validation to `decodeSnapshot` (known categories, types, size caps), routing the viewer's CSV download through the guarded writer (V3-6), and removing the implied guarantee from the expiry wording. If expiry or revocation must be real, it needs a server.
 2. **Backup-freshness awareness** (the sync pill), deriving `lastBackupAt` from a dedicated stored field rather than job history (V3-5).
 
 **Do not adopt from V3, at least for now:**
