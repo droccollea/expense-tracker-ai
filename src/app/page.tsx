@@ -10,7 +10,8 @@ import { ExpenseList } from "@/components/ExpenseList";
 import { EmptyState } from "@/components/EmptyState";
 import { DashboardSkeleton } from "@/components/Skeleton";
 import { useExpenseDialogs } from "@/components/ExpenseDialogs";
-import { PlusIcon } from "@/components/Icons";
+import { DownloadIcon, PlusIcon } from "@/components/Icons";
+import { downloadCSV } from "@/lib/csv";
 import { useToast } from "@/hooks/useToast";
 
 export default function DashboardPage() {
@@ -20,9 +21,14 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-500">An overview of where your money goes.</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
+          <p className="mt-1 text-sm text-slate-500">An overview of where your money goes.</p>
+        </div>
+        <button onClick={() => downloadCSV(sortByDateDesc(expenses))} disabled={isLoading || expenses.length === 0} className="btn-secondary">
+          <DownloadIcon width={16} height={16} /> Export Data
+        </button>
       </div>
 
       {isLoading ? (
