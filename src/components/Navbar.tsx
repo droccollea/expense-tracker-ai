@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/", label: "Dashboard", Icon: ChartIcon },
   { href: "/expenses", label: "Expenses", Icon: ListIcon },
   { href: "/exports", label: "Exports", Icon: CloudIcon },
+  { href: "/top-vendors", label: "Top vendors", Icon: WalletIcon },
 ];
 
 export function Navbar() {
