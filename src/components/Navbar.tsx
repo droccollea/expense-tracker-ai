@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/expenses", label: "Expenses", Icon: ListIcon },
   { href: "/top-categories", label: "Top categories", Icon: TagIcon },
   { href: "/exports", label: "Exports", Icon: CloudIcon },
+  { href: "/top-vendors", label: "Top vendors", Icon: WalletIcon },
 ];
 
 export function Navbar() {
