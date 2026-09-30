@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartIcon, CloudIcon, ListIcon, PlusIcon, WalletIcon } from "./Icons";
+import { ChartIcon, CloudIcon, ListIcon, PlusIcon, TagIcon, WalletIcon } from "./Icons";
 import { SyncIndicator } from "./cloud/SyncIndicator";
 import { useExpenseDialogs } from "./ExpenseDialogs";
 
 const LINKS = [
   { href: "/", label: "Dashboard", Icon: ChartIcon },
   { href: "/expenses", label: "Expenses", Icon: ListIcon },
+  { href: "/top-categories", label: "Top categories", Icon: TagIcon },
   { href: "/exports", label: "Exports", Icon: CloudIcon },
 ];
 
